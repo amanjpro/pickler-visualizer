@@ -297,7 +297,6 @@ class PickleProcessor(clazz: Class[_]) {
   def readNameInfo(end: Int) = new String(buf.bytes.slice(buf.readIndex, end))
 
   private def compose(xs: Any*): String = xs map ("" + _) filterNot (_ == "") mkString " "
-
   def processSymbolInfo(i: Int, tag: String, end: Int) {
     val pos = buf.readIndex
     val nameRef = readNameRef()
@@ -309,7 +308,7 @@ class PickleProcessor(clazz: Class[_]) {
     val isTParam    = isParam && (tag == "type")
     val isImplicit  = hasFlag0 contains Flags.IMPLICIT
     val filtFlags   = (hasFlag0 filterNot Set(Flags.PARAM, Flags.IMPLICIT)).foldLeft(0L)(_ & _)
-    val flagString  = Flags.flagsToString(filtFlags)
+    val flagString  = flagsToString(filtFlags)
 
     // Handle optional [privateWithin_Ref]
     val nextIdx = buf.readNat
@@ -410,5 +409,43 @@ class PickleProcessor(clazz: Class[_]) {
     case VALDEFtree          => "VALDEFtree"
 
     case _ => throw new RuntimeException("Unknown tree tag: " + tag)
+  }
+
+
+  import Flags._
+  private def accessString(flags: Long, privateWithin: String) = {
+    if (privateWithin == "") {
+      if ((flags & PrivateLocal) == PrivateLocal) "private[this]"
+      else if ((flags & ProtectedLocal) == ProtectedLocal) "protected[this]"
+      else if ((flags & PRIVATE) != 0) "private"
+      else if ((flags & PROTECTED) != 0) "protected"
+      else ""
+    }
+    else if ((flags & PROTECTED) != 0) "protected[" + privateWithin + "]"
+    else "private[" + privateWithin + "]"
+  }
+  private def flagsToString(flags: Long, privateWithin: String): String = {
+    val access    = accessString(flags, privateWithin)
+    val nonAccess = flagsToString(flags & ~AccessFlags)
+    List(nonAccess, access) filterNot (_ == "") mkString " "
+  }
+  private def flagsToString(flags: Long): String = {
+    if (flags == 0L) "" else {
+      var sb: StringBuilder = null
+      var i = 0
+      while (i <= MaxBitPosition) {
+        val mask = rawFlagPickledOrder(i)
+        if ((flags & mask) != 0L) {
+          val s = flagToString(mask)
+          if (s.length > 0) {
+            if (sb eq null) sb = new StringBuilder append s
+            else if (sb.length == 0) sb append s
+            else sb append " " append s
+          }
+        }
+        i += 1
+      }
+      if (sb eq null) "" else sb.toString
+    }
   }
 }
