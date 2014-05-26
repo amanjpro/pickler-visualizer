@@ -2,15 +2,8 @@ name := "pickler-visualizer"
 
 organization := "org.improving"
 
-scalaVersion := "2.10.0-SNAPSHOT"
+scalaVersion := "2.10.4"
 
-// crossScalaVersions in GlobalScope <<= (scalaVersion)(v => Seq("2.9.1.RC4", v))
-
-libraryDependencies <++= (scalaVersion)(v => Seq(
-  "org.scala-lang" % "scala-library" % v,
-  "org.scala-lang" % "scala-compiler" % v
-))
+libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value
 
 fork in run := true
-
-offline := true

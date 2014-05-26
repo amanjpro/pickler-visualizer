@@ -1,12 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 #
 
-[[ $# -gt 0 ]] || { echo "Usage: $0 [class class ...]"; exit 1; }
-
-# fancier sbt for -snapshot reasons.
-[[ -f ./sbt ]] || {
-  curl --silent --output sbt https://raw.github.com/paulp/sbt-extras/master/sbt
-  chmod +x sbt
-}
-
-./sbt "run $*"
+sbt "run $*"

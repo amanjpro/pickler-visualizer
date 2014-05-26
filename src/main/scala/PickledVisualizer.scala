@@ -33,7 +33,7 @@ object PickleView {
 
 class PickleProcessor(clazz: Class[_]) {
   val clazzName = clazz.getSimpleName
-  
+
   def this(name: String) = this (ClassLoader.getSystemClassLoader().loadClass(name))
 
   val defaultColor = "navajowhite"
@@ -42,7 +42,7 @@ class PickleProcessor(clazz: Class[_]) {
   val tpeColor     = "plum2"
   val annotColor   = "coral"
   val literalColor = "chartreuse"
-  
+
   val typeFont = "/Users/paulp/Library/Fonts/Consolas Italic.ttf"
   val termFont = "/Users/paulp/Library/Fonts/Consolas.ttf"
 
@@ -55,7 +55,7 @@ class PickleProcessor(clazz: Class[_]) {
   }
 
   private var w: PrintWriter = _
-  
+
   def withWriter[T](writer: PrintWriter)(body: => T): T = {
     w = writer
     try body
@@ -77,12 +77,12 @@ class PickleProcessor(clazz: Class[_]) {
   def seekToPos(pos: Int) {
     buf.readIndex = pos;
   }
-  
+
   private def q(s: String) = "\"" + s + "\""
   def mkLine(label: String, pairs: Tuple2[_,_]*): String = {
     pairs map { case (k, v) => k + "=" + v } mkString (label + " [", ", ", "];")
   }
-  
+
   def graphLine(pairs: Tuple2[_,_]*): String = mkLine("graph", pairs: _*)
   def nodeLine(pairs: Tuple2[_,_]*): String  = mkLine("node", pairs: _*)
   def digraph(body: => Unit) {
@@ -124,7 +124,7 @@ class PickleProcessor(clazz: Class[_]) {
       processEntry(tag, len, i)
     }
   }
-  
+
   def tag2string(tag: Int): String = tag match {
     case TERMname       => "TermName"
     case TYPEname       => "TypeName"
@@ -170,10 +170,10 @@ class PickleProcessor(clazz: Class[_]) {
     case EXISTENTIALtpe => "ExistentialType"
     case TREE           => "Tree"
     case MODIFIERS      => "Modifiers"
-        
+
     case _ => "***BAD TAG***(" + tag + ")"
   }
-  
+
 
   def processEntry(tag: Int, len: Int, i: Int) {
     val end = buf.readIndex + len
@@ -182,7 +182,7 @@ class PickleProcessor(clazz: Class[_]) {
     tag match {
       case (TERMname | TYPEname) =>
         indexToName(i) = readNameInfo(end)
-        
+
       case (TYPEsym | ALIASsym | MODULEsym) =>
         processSymbolInfo(i, tn, end)
       case CLASSsym =>
@@ -198,7 +198,7 @@ class PickleProcessor(clazz: Class[_]) {
         printNodeInfo(i, "class " + refName, refColor)
         if (buf.readIndex < end)
           processOwnerRef(i)
-          
+
       case EXTMODCLASSref =>
         val refName = readNameRef()
         printNodeInfo(i, "module " + refName, refColor)
@@ -295,7 +295,7 @@ class PickleProcessor(clazz: Class[_]) {
   }
 
   def readNameInfo(end: Int) = new String(buf.bytes.slice(buf.readIndex, end))
-  
+
   private def compose(xs: Any*): String = xs map ("" + _) filterNot (_ == "") mkString " "
 
   def processSymbolInfo(i: Int, tag: String, end: Int) {
@@ -303,7 +303,7 @@ class PickleProcessor(clazz: Class[_]) {
     val nameRef = readNameRef()
     processOwnerRef(i)
 
-    val flagLongNat = Flags.rawFlagsToPickled(buf.readLongNat)
+    val flagLongNat = Flags.rawToPickledFlags(buf.readLongNat)
     val hasFlag0    = 0 to 62 map (1L << _) filter (f => (flagLongNat & f) != 0L)
     val isParam     = hasFlag0 contains Flags.PARAM
     val isTParam    = isParam && (tag == "type")
@@ -337,7 +337,7 @@ class PickleProcessor(clazz: Class[_]) {
     processRef(i, "info")
     processListRef(i, end)
   }
-  
+
   def readNameRef() = {
     val refIdx = buf.readNat
     val pos    = buf.readIndex
@@ -345,7 +345,7 @@ class PickleProcessor(clazz: Class[_]) {
     buf.readIndex = pos
     indexToName(refIdx)
   }
-  
+
   def processOwnerRef(i: Int) {
     w.println(i + " -> " + buf.readNat + " [label=\"owner\"];")
   }
